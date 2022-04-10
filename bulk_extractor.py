@@ -1,36 +1,17 @@
 import subprocess
 import os
 import sys
-
-
-def parse_args(args):
-    path = ''
-    passwords = ''
-    if len(args) > 1:
-        if len(args) == 2:
-            if args[1] == '-h':
-                print('\n\t[!] Under construction.\n')
-                sys.exit()
-            else:
-                print('\n\t[!] Invalid option.\n')
-                sys.exit()
-
-        path = args[1]
-        passwords = args[2]
-        return path, passwords
-    else:
-        print(f'\n\t[!] Run with -h option to view the manual guide.\n')
-        sys.exit()
+import argparse
 
 
 def list_files(path):
-    os.chdir(path)
     files = []
-    for file in os.listdir():
+    for file in os.listdir(path):
         if os.path.isfile(file):
             ext = os.path.splitext(file)[1]
             if ext.lower() in ['.zip', '.rar']:
-                files.append(file)
+                file_path = os.path.join(path, file)
+                files.append(file_path)
     return files
 
 
@@ -44,9 +25,9 @@ def read_password(password_file):
     return passwords
 
 
-def extract_file(file, password):
+def extract_file(file, password, destination):
     output = subprocess.run(
-        ['7z', 'x', '-p'+password, file], capture_output=True, text=True)
+        ['7z', 'x', '-p'+password, file, '-o'+destination], capture_output=True, text=True)
     return output
 
 
@@ -57,54 +38,78 @@ def check_and_delete(dir):
     return None
 
 
-def main():
-    args = sys.argv
-    path, passwords = parse_args(args)
-    passwords = read_password(passwords)
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Extract files from a zip or rar archive protected with a password.')
 
-    if os.path.isfile(path):
-        current_dir = os.getcwd()
-        if os.path.abspath(os.path.join(os.path.abspath(path), os.path.pardir)) == current_dir:
-            file = path
-        else:
-            print()
-            dir, file = os.path.split(path)
-            os.chdir(dir)
-        check_and_delete(os.path.splitext(file)[0])
-        for password in passwords:
-            output = extract_file(file, password)
-            if output.returncode == 0:
-                print(f'\n[*] DONE.\n')
-                sys.exit()
-            else:
-                check_and_delete(os.path.splitext(file)[0])
+    parser.add_argument(
+        '-p', '--password',
+        required=True,
+        help='Password string or a file containing a list of passwords.')
 
-    elif os.path.isdir(path):
-        failed = 0
-        success = 0
+    parser.add_argument(
+        '-f', '--file',
+        required=True,
+        help='File to extract. It can be a single file or a list of files in a directory.')
+
+    parser.add_argument(
+        '-d', '--destination',
+        default='.',
+        help='Destination to store extracted files.')
+
+    args = parser.parse_args()
+    return args
+
+
+def get_passwords(arg):
+    if os.path.isfile(arg):
+        passwords = read_password(arg)
+    else:
+        passwords = arg.password.split(',')
+    return passwords
+
+
+def get_files(arg):
+    path = os.path.join(os.getcwd(), arg)
+    if os.path.isfile(arg):
+        files = [path]
+    else:
         files = list_files(path)
-        spaces = 0
-        if files:
-            spaces = len(max(files, key=len)) + 22
-        print()
-        for file in files:
-            check_and_delete(os.path.splitext(file)[0])
-            print(f'\t[*] Extracting {file}......'.ljust(spaces), end='')
-            for password in passwords:
-                output = extract_file(file, password)
-                if output.returncode == 0:
-                    success += 1
-                    print(f'DONE')
-                    break
-                else:
-                    check_and_delete(os.path.splitext(file)[0])
-                    if password == passwords[-1]:
-                        failed += 1
-                        print(f'FAILED')
-                        print(f'\t{output.returncode}')
+    return files
 
-        print(f'\n[*] Success = {success}')
-        print(f'[!] Failed = {failed}\n')
+
+def main():
+
+    args = parse_args()
+
+    passwords = get_passwords(args.password)
+    files = get_files(args.file)
+    destination = args.destination
+
+    failed = 0
+    success = 0
+    spaces = 0
+    if files:
+        spaces = len(max(files, key=len)) + 22
+    print()
+    for file in files:
+        check_and_delete(os.path.join(os.getcwd(), destination))
+        print(f'[*] Extracting {file}......'.ljust(spaces), end='')
+        for password in passwords:
+            output = extract_file(file, password, destination)
+            if output.returncode == 0:
+                success += 1
+                print(f'DONE')
+                break
+            else:
+                check_and_delete(os.path.join(os.getcwd(), destination))
+                if password == passwords[-1]:
+                    failed += 1
+                    print(f'FAILED')
+                    print(f'\t{output.returncode}')
+
+    print(f'\n[+] Success = {success}')
+    print(f'[!] Failed = {failed}\n')
 
 
 if __name__ == "__main__":

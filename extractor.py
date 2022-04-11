@@ -16,12 +16,10 @@ def list_files(path):
 
 
 def read_password(password_file):
-    output = subprocess.run(
-        ['cat', password_file], capture_output=True, text=True)
-    if output.returncode != 0:
-        print(f'\n\t{output.stderr.strip()}\n')
-        sys.exit()
-    passwords = output.stdout.split('\n')
+    passwords = []
+    with open(password_file, 'r') as f:
+        for line in f:
+            passwords.append(line.strip())
     return passwords
 
 
@@ -108,8 +106,9 @@ def main():
                     print(f'FAILED')
                     print(f'\t{output.returncode}')
 
-    print(f'\n[+] Success = {success}')
-    print(f'[!] Failed = {failed}\n')
+    print()
+    print(f'[+] Success = {success}')
+    print(f'[-] Failed = {failed}\n')
 
 
 if __name__ == "__main__":

@@ -29,13 +29,6 @@ def extract_file(file, password, destination):
     return output
 
 
-def check_and_delete(dir):
-    if os.path.exists(dir):
-        subprocess.run(
-            ['rm', '-rf', dir], capture_output=True, text=True)
-    return None
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Extract files from a zip or rar archive protected with a password.')
@@ -91,7 +84,6 @@ def main():
         spaces = len(max(files, key=len)) + 22
     print()
     for file in files:
-        check_and_delete(os.path.join(os.getcwd(), destination))
         print(f'[*] Extracting {file}......'.ljust(spaces), end='')
         for password in passwords:
             output = extract_file(file, password, destination)
@@ -100,11 +92,9 @@ def main():
                 print(f'DONE')
                 break
             else:
-                check_and_delete(os.path.join(os.getcwd(), destination))
                 if password == passwords[-1]:
                     failed += 1
                     print(f'FAILED')
-                    print(f'\t{output.returncode}')
 
     print()
     print(f'[+] Success = {success}')

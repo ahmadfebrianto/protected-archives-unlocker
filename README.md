@@ -1,9 +1,10 @@
-# bulk-extractor-with-password
+# Protected Archive Extractor
 
 ### Description
-This is script is simply made for extracting a bunch of RAR or ZIP files protected with a password. 
+This script is simply made for extracting a bunch of RAR or ZIP files protected with a password. 
 
 ### Usage
 ```python
-python3 bulk_extractor.py <directory/file path> <password (list)>
+python3 extractor.py [-h] -p PASSWORD -f FILE [-d DESTINATION]
 ```
+

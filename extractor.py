@@ -56,7 +56,7 @@ def get_passwords(arg):
     if os.path.isfile(arg):
         passwords = read_password(arg)
     else:
-        passwords = arg.password.split(',')
+        passwords = arg.split(',')
     return passwords
 
 
